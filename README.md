@@ -1,115 +1,108 @@
-# PRISMA-Oriented Screening Pipeline
+ # PRISMA-Oriented Screening Pipeline for a Semantic BEM Survey
 
-This repository contains a rule-based literature screening pipeline for PRISMA-style evidence gathering. It ingests exports from ACM, IEEE, Lens, Scopus, and Web of Science, normalizes and deduplicates records by title, then applies staged screening rules to produce included and excluded record sets at each step.
+   This repository contains the database-search and automated screening pipeline used to support the
+ PRISMA-oriented component of a survey on semantic modelling for Building Energy Management (BEM). It processes
+ exports from ACM Digital Library, IEEE Xplore, Lens, Scopus, and Web of Science.
 
-## What the pipeline does
+   The repository documents the automated screening stages only. Manual abstract screening, full-text qualitative
+ assessment, and complementary source identification are described in the survey methodology.
 
-The main script is [run_lens_new_only_pipeline.py](/C:/Users/mania/Desktop/prisma_oriented_screening_pipeline/run_lens_new_only_pipeline.py). It:
+   ## Purpose
 
-1. Loads CSV exports from `source_data/`.
-2. Normalizes titles for consistent matching.
-3. Removes blank-title records.
-4. Deduplicates records by normalized title.
-5. Screens out explicitly non-English records.
-6. Screens out excluded publication formats.
-7. Applies scope-based keyword rules across title, abstract, and keywords.
-8. Applies a stricter title-based screening rule.
-9. Writes Excel outputs for each included/excluded decision set into `export/`.
+   The pipeline makes the automated database-screening stages transparent, auditable, and reproducible. It
+ normalises titles, removes duplicate and non-English records, filters publication formats, and applies
+ rule-based screening over bibliographic metadata.
 
-## Repository layout
+   ## Main script
 
-```text
-.
-|-- run_lens_new_only_pipeline.py
-|-- source_data/
-|   |-- ACM.csv
-|   |-- IEEE.csv
-|   |-- Lens.csv
-|   |-- Scopus.csv
-|   `-- WOS.csv
-`-- export/
-```
+   ```text
+   run_lens_new_only_pipeline.py
+   ```
 
-## Requirements
+   ## Repository layout
 
-- Python 3.10+
-- `pandas`
-- An Excel writer engine for `DataFrame.to_excel()`, typically `openpyxl`
+   ```text
+   .
+   |-- run_lens_new_only_pipeline.py
+   |-- source_data/
+   |   |-- ACM.csv
+   |   |-- IEEE.csv
+   |   |-- Lens.csv
+   |   |-- Scopus.csv
+   |   `-- WOS.csv
+   `-- export/
+   ```
 
-Install dependencies with:
+   ## Requirements
 
-```bash
-pip install pandas openpyxl
-```
+   ```bash
+   pip install pandas openpyxl
+   ```
 
-## Input data
+   ## Run
 
-Place the following CSV files in `source_data/`:
+   Place the database exports in `source_data/`, then run:
 
-- `ACM.csv`
-- `IEEE.csv`
-- `Lens.csv`
-- `Scopus.csv`
-- `WOS.csv`
+   ```bash
+   python run_lens_new_only_pipeline.py
+   ```
 
-The script expects a `Title` column in every file and uses source-specific metadata fields when present, including abstract, keywords, language, document type, and year.
+   Outputs are written to `export/`.
 
-## How to run
+   ## Screening stages
 
-From the repository root:
+   1. Title presence filtering.
+   2. Title-based deduplication.
+   3. Non-English record exclusion.
+   4. Publication-format screening.
+   5. Scope-based screening using title, abstract, and keywords.
+   6. Rule-based title screening.
 
-```bash
-python run_lens_new_only_pipeline.py
-```
+   ## Current run snapshot
 
-The script creates the `export/` directory if it does not exist and overwrites matching output files from prior runs.
+   The survey run retrieved 34,216 raw records:
 
-## Output files
+   ```text
+   ACM Digital Library: 1,276
+   IEEE Xplore:          402
+   Lens:              20,247
+   Scopus:            11,779
+   Web of Science:       512
+   Total:             34,216
+   ```
 
-The pipeline writes summary workbooks directly under `export/`:
+   Automated screening produced:
 
-- `source_stats.xlsx`
-- `duplicates_per_source.xlsx`
-- `screening_summary.xlsx`
+   ```text
+   Title presence filter:          34,189 included /     27 excluded
+   Deduplication:                  32,478 included /  1,711 excluded
+   Language screening:             32,470 included /      8 excluded
+   Publication-format screening:   28,554 included /  3,916 excluded
+   Scope-based screening:           5,763 included / 22,791 excluded
+   Rule-based title screening:      1,870 included /  3,893 excluded
+   ```
 
-It also writes included and excluded workbooks for each screening stage:
+   The 1,870 retained records were then assessed through manual abstract screening and full-text qualitative
+ assessment.
 
-- `export/01_title_presence_filter/`
-- `export/02_deduplication/`
-- `export/03_language_screening/`
-- `export/04_publication_format_screening/`
-- `export/05_scope_based_screening/`
-- `export/06_rule_based_title_screening/`
+   ## Relation to the survey corpus
 
-Each stage folder contains:
+   The PRISMA-oriented selection pipeline accounted for 71 ontology-relevant sources in the final survey corpus:
 
-- `included.xlsx`
-- `excluded.xlsx`
+   ```text
+   68 journal, conference, and workshop papers
+   1 technical report
+   2 books
+   ```
 
-## Screening logic
+   The final ontology-relevant set contains 149 references. The remaining 78 were identified through
+ complementary procedures, including backward reference checking, forward citation tracing, manual venue
+ searches, targeted retrieval of seminal ontology frameworks, and standards/project-related source tracing.
 
-The rules are encoded directly in the script as term lists and simple boolean conditions.
 
-- Title presence filter: drops records with empty normalized titles.
-- Deduplication: keeps the first record per normalized title using source priority.
-- Language screening: excludes records with explicit non-English language metadata.
-- Publication-format screening: excludes records such as dissertations, preprints, editorials, news items, retracted items, journal issues, and reports unless an allowed type is also present.
-- Scope-based screening: looks for combinations of building, semantic, energy, and model terms across title, abstract, and keyword text.
-- Rule-based title screening: keeps records whose titles show domain relevance plus semantic, model, review, or application signals.
+   ## Notes
 
-## Current run snapshot
-
-Running the script in this repository on May 8, 2026 produced:
-
-- Title presence filter: included `34189`, excluded `27`
-- Deduplication: included `32478`, excluded `1711`
-- Language screening: included `32470`, excluded `8`
-- Publication-format screening: included `28554`, excluded `3916`
-- Scope-based screening: included `5763`, excluded `22791`
-- Rule-based title screening: included `1870`, excluded `3893`
-
-## Notes
-
-- The script currently reads all source files from fixed paths under `source_data/`.
-- Deduplication is title-based only; it does not currently use DOI or other identifiers.
-- Output files are Excel workbooks, so large runs can take time and disk space.
+   - This repository covers the automated screening stages only.
+   - Manual screening and complementary source identification are not automated here.
+   - Deduplication is based on normalised titles.
+   - Screening rules are transparent and reproducible
