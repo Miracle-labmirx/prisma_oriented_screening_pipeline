@@ -71,7 +71,7 @@
    Total:             34,216
    ```
 
-   Automated screening produced:
+   Automated screening results:
 
    ```text
    Title presence filter:          34,189 included /     27 excluded
